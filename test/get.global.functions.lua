@@ -130,6 +130,19 @@ printt = function(t) print(table_tostring(t)) end
 -- now the actual script
 addmodulepath(script.path.."/..")
 
+local listlpeg = require("listlpeg")
+local P = listlpeg.P
+local R = listlpeg.R
+local S = listlpeg.S
+local L = listlpeg.L
+local V = listlpeg.V
+local C = listlpeg.C
+local Cmt = listlpeg.Cmt
+local Ct = listlpeg.Ct
+local Cg = listlpeg.Cg
+local Cc = listlpeg.Cc
+local Cp = listlpeg.Cp
+
 local Lexer = require("codepeg.Lexer")
 local Parser = require("codepeg.Parser")
 local luaspec = require("codepeg.specification.lua")
@@ -146,18 +159,25 @@ local parser = Parser{
 
 local code = [=====[
 
+--[[
 -- ignores local functions
 local
 function nodoc()
 end
+--]]
 
-function test(x)
-	return x^x
-end
+t1.meth.x = 1
+--t1, t2 = function() end, 1
+--t1, t2 = function() end, function() end
+--t1, t2 = 1, function() end
+--function t1() end
 
+
+---[====[
 -- var lists get detected
 x, y = function() return random() end, 
 	function(a, b) return a..b end
+
 
 -- assignment gets detected
 find_rule = function(ast, rule)
@@ -206,12 +226,11 @@ end
 function obj.subobj:method()
 	return self.value
 end
+--]====]
 
 ]=====]
 
 
-local tokens = lexer:match(code)
---printt(tokens)
 
 local no_collapse = {
 	["function"] = true,
@@ -220,91 +239,126 @@ local no_collapse = {
 	varlist = true,
 	explist = true,
 }
+
+
+-- lex / parse / simplify
+local tokens = lexer:match(code)
 local AST = parser:match(tokens)
 AST = ast.remove_empty_rules(AST, no_collapse)
+ast.print_nodes(AST)
 
-
-------------------------------
---- AST scenarios for global functions
--- block
--- [chunk]
---   stat
---     varlist
---       NAME, NAME
---   EQUALS
---   explist
---     function
---       funcbody
---     COMMA
---     function
---       funcbody
-
--- block
--- [chunk]
---   stat
---     NAME
---   EQUALS
---   function
---     FUNCTION
---     funcbody
-
--- block
--- [chunk]
---   stat
---     FUNCTION
---     NAME
---     funcbody
-function get_global_functions(AST)
-	local stats = ast.find_all_rules(AST, "stat")
-	local global_functions = {}
-	for i, stat in ipairs(stats) do
-		local varlist = ast.find_rule(stat, "varlist")
-		if(varlist) then
-			-- get the list of varnames and expression
-			local explist = ast.find_rule(stat, "explist")
-			local vars = ast.find_all_rules(varlist, "var")
-			local exps = {}
-			for i=1, #explist, 2 do
-				exps[#exps+1] = explist[i]
-			end
-			
-			local names = {}
-			for i, var in ipairs(vars) do
-				local toks = ast.ast_to_tokens(var)
-				local name = ""
-				for _, tok in ipairs(toks) do
-					name = name..tok[1]
-				end
-				names[#names+1] = name
-			end
-			
-			for i, exp in ipairs(exps) do
-				if(exp.rule == "function") then
-					local name = names[i]
-					if(name) then
-						global_functions[#global_functions+1] = {
-							name = name,
-							body = exp[2]
-						}
+-- patterns for grabbing global functions
+--[[
+example pattern:
+	FUNCTION
+      funcname
+        NAME
+      funcbody
+        END
+--]]
+local gfsugar = Ct(ast.Lrule(
+	"stat", 
+	ast.Ptoken"FUNCTION" * 
+	Ct(Cg(
+		ast.Lrule(
+			"funcname", 		
+			C(
+				ast.Ptoken"NAME" * ((ast.Ptoken"DOT" + ast.Ptoken"COLON") * ast.Ptoken"NAME")^0
+			) / 
+				-- extract values from token
+				function(toks)
+					if(toks.token) then
+						return toks[1]
+					else
+						local name = ""
+						for i, tok in ipairs(toks) do
+							name = name..tok[1]
+						end
+						return name
 					end
 				end
-			end
-		elseif(stat[1].token == "FUNCTION") then
-			-- get the function definition (syntax sugar version)
-			local fname = stat[2]
-			local nametoks = ast.ast_to_tokens(fname)
+		), 
+		"name"
+	) * Cg(C(ast.Prule"funcbody"), "body"))
+))
+
+
+local var = ast.Lrule(
+	"var",
+	
+		Ct(C(ast.Ptoken"NAME") * 
+		ast.Lrule(
+			"index",
+			C(ast.Ptoken"DOT") * C(ast.Ptoken"NAME")
+		)^0)
+	/ 
+		function(toks)
 			local name = ""
-			for i, tok in ipairs(nametoks) do
+			for i, tok in ipairs(toks) do
 				name = name..tok[1]
 			end
-			printt(stat)
-			global_functions[#global_functions+1] = {
+			return name
+		end
+)
+
+local f = ast.Lrule(
+	"function",
+	ast.Ptoken"FUNCTION" * 
+	C(ast.Prule"funcbody")
+)
+
+--[[
+-- example pattern:
+	stat
+      varlist
+        var
+          NAME
+      EQUALS
+      explist
+        function
+          FUNCTION
+          funcbody
+            END
+--]]
+local gflist = ast.Lrule(
+	"stat", 
+	(
+		Ct(ast.Lrule(
+			"varlist",
+			var * (ast.Ptoken"COMMA" * var)^0
+		)) * 
+		ast.Ptoken"EQUALS" * 
+		Ct(ast.Lrule(
+			"explist",
+			(f + P(1)*Cc(nil)) * (ast.Ptoken"COMMA" * (f + P(1)*Cc(nil)))^0
+		))
+	) / function(names, exps)
+		local funcs = {}
+		for idx, exp in pairs(exps) do
+			local name = names[idx]
+			funcs[#funcs+1] = {
 				name = name,
-				body = stat[3],
+				body = exp
 			}
 		end
+		return funcs
 	end
-	return global_functions
+)
+
+local gfpatt = gfsugar + gflist
+
+
+-- get all of the global statements in the AST
+local patt = ast.Crule"stat"
+patt = Ct(ast.depthfirst(patt))
+local stats = patt:match(AST)
+
+local gfuncs = {}
+for i, stat in ipairs(stats) do
+	local gfs = gfpatt:match{stat}
+	for i, gf in ipairs(gfs) do
+		gfuncs[#gfuncs+1] = gf
+	end
 end
 
 
@@ -412,7 +466,7 @@ end
 -- write to file
 local function_code = "<br/><h2>Global Functions</h2> <ol>"
 local prefix = "<span class=keyword>function</span> <span class=function_name>%s</span>"
-local gfuncs = get_global_functions(AST)
+--local gfuncs = get_global_functions(AST)
 for i, gfunc in ipairs(gfuncs) do
 	-- get the function body tokens
 	local bodytokens = ast.ast_to_tokens(gfunc.body)

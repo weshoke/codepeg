@@ -34,18 +34,25 @@ span.string  	{ color: #D14; }
 <body>
 <pre>
 
-<span class=comment>-- ignores local functions</span>
-<span class=keyword>local</span>
-<span class=keyword>function</span> <span class=function_name>nodoc</span><span class=operator>(</span><span class=operator>)</span>
-<span class=keyword>end</span>
+<span class=comment>--[[
+-- ignores local functions
+local
+function nodoc()
+end
+--]]</span>
 
-<span class=keyword>function</span> <span class=function_name>test</span><span class=operator>(</span><span class=identifier>x</span><span class=operator>)</span>
-   <span class=keyword>return</span> <span class=identifier>x</span><span class=operator>^</span><span class=identifier>x</span>
-<span class=keyword>end</span>
+<span class=identifier>t1</span><span class=operator>.</span><span class=identifier>meth</span><span class=operator>.</span><span class=identifier>x</span> <span class=operator>=</span> <span class=number>1</span>
+<span class=comment>--t1, t2 = function() end, 1</span>
+<span class=comment>--t1, t2 = function() end, function() end</span>
+<span class=comment>--t1, t2 = 1, function() end</span>
+<span class=comment>--function t1() end</span>
 
+
+<span class=comment>---[====[</span>
 <span class=comment>-- var lists get detected</span>
 <span class=identifier>x</span><span class=operator>,</span> <span class=identifier>y</span> <span class=operator>=</span> <span class=keyword>function</span><span class=operator>(</span><span class=operator>)</span> <span class=keyword>return</span> <span class=identifier>random</span><span class=operator>(</span><span class=operator>)</span> <span class=keyword>end</span><span class=operator>,</span> 
    <span class=keyword>function</span><span class=operator>(</span><span class=identifier>a</span><span class=operator>,</span> <span class=identifier>b</span><span class=operator>)</span> <span class=keyword>return</span> <span class=identifier>a</span><span class=operator>..</span><span class=identifier>b</span> <span class=keyword>end</span>
+
 
 <span class=comment>-- assignment gets detected</span>
 <span class=identifier>find_rule</span> <span class=operator>=</span> <span class=keyword>function</span><span class=operator>(</span><span class=identifier>ast</span><span class=operator>,</span> <span class=identifier>rule</span><span class=operator>)</span>
@@ -94,16 +101,12 @@ span.string  	{ color: #D14; }
 <span class=keyword>function</span> <span class=function_name>obj</span><span class=operator>.</span><span class=identifier>subobj</span><span class=operator>:</span><span class=identifier>method</span><span class=operator>(</span><span class=operator>)</span>
    <span class=keyword>return</span> <span class=identifier>self</span><span class=operator>.</span><span class=identifier>value</span>
 <span class=keyword>end</span>
+<span class=comment>--]====]</span>
 
 
 </pre>
 
-<br/><h2>Global Functions</h2> <ol>   <li><h4>test:</h4><pre>
-<span class=keyword>function</span> <span class=function_name>test</span><span class=operator>(</span><span class=identifier>x</span><span class=operator>)</span>
-   <span class=keyword>return</span> <span class=identifier>x</span><span class=operator>^</span><span class=identifier>x</span>
-<span class=keyword>end</span>
-   </pre></li>
-      <li><h4>x:</h4><pre>
+<br/><h2>Global Functions</h2> <ol>   <li><h4>x:</h4><pre>
 <span class=keyword>function</span> <span class=function_name>x</span><span class=operator>(</span><span class=operator>)</span> <span class=keyword>return</span> <span class=identifier>random</span><span class=operator>(</span><span class=operator>)</span> <span class=keyword>end</span>
    </pre></li>
       <li><h4>y:</h4><pre>
