@@ -1,0 +1,170 @@
+<html>
+<head>
+<style type="text/css">
+<!--
+body {
+	background: #ffffff;
+	font-family: Arial, sans-serif;
+	font-size: 12px;
+	color: #000000;
+}
+
+pre {
+	border: 1px dotted #666;
+	padding: 8px;
+}
+
+span {
+	font-family: 'Bitstream Vera Sans Mono','Courier', monospace;
+/*	font-size: 115%; */
+}
+
+/* library #0086B3 */
+/* Strings #D14 */
+/* Keywords: font-weight: bold; color: #000000 */
+/* function name #900 */
+/* comment color: #998, font-style: italic;*/
+/* number #099 */
+
+
+span.comment 	{ color: #998;  font-style: italic; }
+span.identifier { color: #000000; }
+span.keyword 	{ color: #000000; font-weight: bold; }
+span.library 	{ color: #a22360; }
+span.number 	{ color: #099; }
+span.operator 	{ color: #000000; }
+span.string  	{ color: #D14; }
+
+-->
+</style>
+</head>
+<body>
+<pre>
+
+<span class=comment>-- ignores local functions</span>
+<span class=keyword>local</span>
+<span class=keyword>function</span> <span class=identifier>nodoc</span><span class=operator>(</span><span class=operator>)</span>
+<span class=keyword>end</span>
+
+<span class=keyword>function</span> <span class=identifier>test</span><span class=operator>(</span><span class=identifier>x</span><span class=operator>)</span>
+   <span class=keyword>return</span> <span class=identifier>x</span><span class=operator>^</span><span class=identifier>x</span>
+<span class=keyword>end</span>
+
+<span class=comment>-- var lists get detected</span>
+<span class=identifier>x</span><span class=operator>,</span> <span class=identifier>y</span> <span class=operator>=</span> <span class=keyword>function</span><span class=operator>(</span><span class=operator>)</span> <span class=keyword>return</span> <span class=identifier>random</span><span class=operator>(</span><span class=operator>)</span> <span class=keyword>end</span><span class=operator>,</span> 
+   <span class=keyword>function</span><span class=operator>(</span><span class=identifier>a</span><span class=operator>,</span> <span class=identifier>b</span><span class=operator>)</span> <span class=keyword>return</span> <span class=identifier>a</span><span class=operator>..</span><span class=identifier>b</span> <span class=keyword>end</span>
+
+<span class=comment>-- assignment gets detected</span>
+<span class=identifier>find_rule</span> <span class=operator>=</span> <span class=keyword>function</span><span class=operator>(</span><span class=identifier>ast</span><span class=operator>,</span> <span class=identifier>rule</span><span class=operator>)</span>
+   <span class=keyword>if</span><span class=operator>(</span><span class=identifier>ast</span><span class=operator>.</span><span class=identifier>rule</span> <span class=operator>==</span> <span class=identifier>rule</span><span class=operator>)</span> <span class=keyword>then</span>
+      <span class=keyword>return</span> <span class=identifier>ast</span>
+   <span class=keyword>end</span>
+
+   <span class=keyword>for</span> <span class=identifier>i</span><span class=operator>,</span> <span class=identifier>n</span> <span class=keyword>in</span> <span class=library>ipairs</span><span class=operator>(</span><span class=identifier>ast</span><span class=operator>)</span> <span class=keyword>do</span>
+      <span class=keyword>if</span><span class=operator>(</span><span class=identifier>n</span><span class=operator>.</span><span class=identifier>rule</span> <span class=operator>==</span> <span class=identifier>rule</span><span class=operator>)</span> <span class=keyword>then</span>
+         <span class=keyword>return</span> <span class=identifier>n</span>
+      <span class=keyword>elseif</span><span class=operator>(</span><span class=identifier>n</span><span class=operator>.</span><span class=identifier>rule</span><span class=operator>)</span> <span class=keyword>then</span>
+         <span class=keyword>local</span> <span class=identifier>r</span> <span class=operator>=</span> <span class=identifier>find_rule</span><span class=operator>(</span><span class=identifier>n</span><span class=operator>,</span> <span class=identifier>rule</span><span class=operator>)</span>
+         <span class=keyword>if</span><span class=operator>(</span><span class=identifier>r</span><span class=operator>)</span> <span class=keyword>then</span>
+            <span class=keyword>return</span> <span class=identifier>r</span>
+         <span class=keyword>end</span>
+      <span class=keyword>end</span>
+   <span class=keyword>end</span>
+<span class=keyword>end</span>
+
+
+<span class=keyword>function</span> <span class=identifier>counter</span><span class=operator>(</span><span class=operator>)</span>
+   <span class=keyword>local</span> <span class=identifier>v</span> <span class=operator>=</span> <span class=number>0</span>
+   
+   <span class=keyword>return</span>
+   <span class=keyword>function</span><span class=operator>(</span><span class=operator>)</span>
+      <span class=keyword>local</span> <span class=identifier>v</span> <span class=operator>=</span> <span class=identifier>v</span><span class=operator>+</span><span class=number>1</span>
+      <span class=keyword>return</span> <span class=identifier>v</span>
+   <span class=keyword>end</span>
+<span class=keyword>end</span>
+
+<span class=keyword>function</span> <span class=identifier>code</span><span class=operator>(</span><span class=operator>)</span>
+   <span class=keyword>return</span> <span class=string>[==[
+   [[something]]
+   [===[other
+   
+   here]===]
+   ]==]</span>
+<span class=keyword>end</span>
+
+<span class=comment>-- OO syntax sugar</span>
+<span class=keyword>function</span> <span class=identifier>obj</span><span class=operator>:</span><span class=identifier>method</span><span class=operator>(</span><span class=operator>)</span>
+   <span class=keyword>return</span> <span class=identifier>self</span><span class=operator>.</span><span class=identifier>value</span>
+<span class=keyword>end</span>
+
+<span class=comment>-- nested OO syntax sugar</span>
+<span class=keyword>function</span> <span class=identifier>obj</span><span class=operator>.</span><span class=identifier>subobj</span><span class=operator>:</span><span class=identifier>method</span><span class=operator>(</span><span class=operator>)</span>
+   <span class=keyword>return</span> <span class=identifier>self</span><span class=operator>.</span><span class=identifier>value</span>
+<span class=keyword>end</span>
+
+
+</pre>
+
+<br/><h2>Global Functions</h2> <ol>   <li><h4>test:</h4><pre>
+<span class=keyword>function</span> <span class=identifier>test</span><span class=operator>(</span><span class=identifier>x</span><span class=operator>)</span>
+   <span class=keyword>return</span> <span class=identifier>x</span><span class=operator>^</span><span class=identifier>x</span>
+<span class=keyword>end</span>
+   </pre></li>
+      <li><h4>x:</h4><pre>
+<span class=keyword>function</span> <span class=identifier>x</span><span class=operator>(</span><span class=operator>)</span> <span class=keyword>return</span> <span class=identifier>random</span><span class=operator>(</span><span class=operator>)</span> <span class=keyword>end</span>
+   </pre></li>
+      <li><h4>y:</h4><pre>
+<span class=keyword>function</span> <span class=identifier>y</span><span class=operator>(</span><span class=identifier>a</span><span class=operator>,</span> <span class=identifier>b</span><span class=operator>)</span> <span class=keyword>return</span> <span class=identifier>a</span><span class=operator>..</span><span class=identifier>b</span> <span class=keyword>end</span>
+   </pre></li>
+      <li><h4>find_rule:</h4><pre>
+<span class=keyword>function</span> <span class=identifier>find_rule</span><span class=operator>(</span><span class=identifier>ast</span><span class=operator>,</span> <span class=identifier>rule</span><span class=operator>)</span>
+   <span class=keyword>if</span><span class=operator>(</span><span class=identifier>ast</span><span class=operator>.</span><span class=identifier>rule</span> <span class=operator>==</span> <span class=identifier>rule</span><span class=operator>)</span> <span class=keyword>then</span>
+      <span class=keyword>return</span> <span class=identifier>ast</span>
+   <span class=keyword>end</span>
+
+   <span class=keyword>for</span> <span class=identifier>i</span><span class=operator>,</span> <span class=identifier>n</span> <span class=keyword>in</span> <span class=library>ipairs</span><span class=operator>(</span><span class=identifier>ast</span><span class=operator>)</span> <span class=keyword>do</span>
+      <span class=keyword>if</span><span class=operator>(</span><span class=identifier>n</span><span class=operator>.</span><span class=identifier>rule</span> <span class=operator>==</span> <span class=identifier>rule</span><span class=operator>)</span> <span class=keyword>then</span>
+         <span class=keyword>return</span> <span class=identifier>n</span>
+      <span class=keyword>elseif</span><span class=operator>(</span><span class=identifier>n</span><span class=operator>.</span><span class=identifier>rule</span><span class=operator>)</span> <span class=keyword>then</span>
+         <span class=keyword>local</span> <span class=identifier>r</span> <span class=operator>=</span> <span class=identifier>find_rule</span><span class=operator>(</span><span class=identifier>n</span><span class=operator>,</span> <span class=identifier>rule</span><span class=operator>)</span>
+         <span class=keyword>if</span><span class=operator>(</span><span class=identifier>r</span><span class=operator>)</span> <span class=keyword>then</span>
+            <span class=keyword>return</span> <span class=identifier>r</span>
+         <span class=keyword>end</span>
+      <span class=keyword>end</span>
+   <span class=keyword>end</span>
+<span class=keyword>end</span>
+   </pre></li>
+      <li><h4>counter:</h4><pre>
+<span class=keyword>function</span> <span class=identifier>counter</span><span class=operator>(</span><span class=operator>)</span>
+   <span class=keyword>local</span> <span class=identifier>v</span> <span class=operator>=</span> <span class=number>0</span>
+   
+   <span class=keyword>return</span>
+   <span class=keyword>function</span><span class=operator>(</span><span class=operator>)</span>
+      <span class=keyword>local</span> <span class=identifier>v</span> <span class=operator>=</span> <span class=identifier>v</span><span class=operator>+</span><span class=number>1</span>
+      <span class=keyword>return</span> <span class=identifier>v</span>
+   <span class=keyword>end</span>
+<span class=keyword>end</span>
+   </pre></li>
+      <li><h4>code:</h4><pre>
+<span class=keyword>function</span> <span class=identifier>code</span><span class=operator>(</span><span class=operator>)</span>
+   <span class=keyword>return</span> <span class=string>[==[
+   [[something]]
+   [===[other
+   
+   here]===]
+   ]==]</span>
+<span class=keyword>end</span>
+   </pre></li>
+      <li><h4>obj:method:</h4><pre>
+<span class=keyword>function</span> <span class=identifier>obj:method</span><span class=operator>(</span><span class=operator>)</span>
+   <span class=keyword>return</span> <span class=identifier>self</span><span class=operator>.</span><span class=identifier>value</span>
+<span class=keyword>end</span>
+   </pre></li>
+      <li><h4>obj.subobj:method:</h4><pre>
+<span class=keyword>function</span> <span class=identifier>obj.subobj:method</span><span class=operator>(</span><span class=operator>)</span>
+   <span class=keyword>return</span> <span class=identifier>self</span><span class=operator>.</span><span class=identifier>value</span>
+<span class=keyword>end</span>
+   </pre></li>
+   </ol>
+</body>
+</html>

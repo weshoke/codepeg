@@ -1,0 +1,95 @@
+<html>
+<head>
+<style type="text/css">
+<!--
+body {
+	background: #ffffff;
+	font-family: Arial, sans-serif;
+	font-size: 12px;
+}
+
+pre {
+	border: 1px dotted #666;
+	padding: 8px;
+}
+
+span.operator { font-family: "Courier New", Courier, Monaco, monospace; }
+span.number { font-family: "Courier New", Courier, Monaco, monospace; color: #1b39f5; }
+span.identifier { font-family: "Courier New", Courier, Monaco, monospace; }
+span.comment { font-family: "Courier New", Courier, Monaco, monospace; color: #0c7f3d; }
+span.string  { font-family: "Courier New", Courier, Monaco, monospace; color: #de4347; }
+span.keyword { font-family: "Courier New", Courier, Monaco, monospace; color: #a22360; 
+	text-shadow: #e4e4e4 1px 1px 0;
+	/*background-color: #fdfdfd;*/
+	/*font-weight: bold;*/ 
+}
+span.library { font-family: "Courier New", Courier, Monaco, monospace; color: #571d8d; text-shadow: #eeeeee 1px 1px 0; }
+-->
+</style>
+</head>
+<body>
+<pre>
+<span class=keyword>local</span> <span class=identifier>audio</span> <span class=operator>=</span> <span class=library>require</span><span class=operator>(</span><span class=string>"audio"</span><span class=operator>)</span>
+<span class=keyword>local</span> <span class=identifier>Def</span> <span class=operator>=</span> <span class=library>require</span><span class=string>"audio.Def"</span>
+<span class=keyword>local</span> <span class=identifier>random</span> <span class=operator>=</span> <span class=library>math</span><span class=operator>.</span><span class=identifier>random</span>
+<span class=keyword>local</span> <span class=identifier>max</span> <span class=operator>=</span> <span class=library>math</span><span class=operator>.</span><span class=identifier>max</span>
+
+<span class=identifier>Def</span><span class=operator>.</span><span class=identifier>globalize</span><span class=operator>(</span><span class=operator>)</span>
+
+<span class=comment>---[[</span>
+<span class=identifier>Mixer</span> <span class=operator>=</span> <span class=identifier>Def</span><span class=operator>{</span>
+   <span class=identifier>dry</span> <span class=operator>=</span> <span class=number>1</span><span class=operator>,</span>
+   <span class=identifier>wet</span> <span class=operator>=</span> <span class=number>0.15</span><span class=operator>,</span>
+   <span class=identifier>decay</span> <span class=operator>=</span> <span class=number>0.5</span><span class=operator>,</span>
+   <span class=identifier>bandwidth</span> <span class=operator>=</span> <span class=number>0.299995</span><span class=operator>,</span>
+   <span class=identifier>damping</span> <span class=operator>=</span> <span class=number>0.2</span><span class=operator>,</span>
+
+   <span class=identifier>P</span><span class=string>"dry"</span> <span class=operator>*</span> <span class=identifier>P</span><span class=string>"input"</span> <span class=operator>+</span> 
+   <span class=identifier>P</span><span class=string>"wet"</span> <span class=operator>*</span> <span class=identifier>Reverb</span><span class=operator>{</span> 
+      <span class=identifier>Mono</span><span class=operator>{</span> <span class=identifier>P</span><span class=string>"input"</span> <span class=operator>}</span><span class=operator>,</span>
+      <span class=identifier>bandwidth</span><span class=operator>=</span><span class=string>"bandwidth"</span><span class=operator>,</span>
+      <span class=identifier>damping</span><span class=operator>=</span><span class=string>"damping"</span><span class=operator>,</span>
+      <span class=identifier>decay</span><span class=operator>=</span><span class=string>"decay"</span><span class=operator>,</span> 
+   <span class=operator>}</span>
+<span class=operator>}</span>
+
+<span class=identifier>verbmix</span> <span class=operator>=</span> <span class=identifier>audio</span><span class=operator>.</span><span class=identifier>Bus</span><span class=operator>(</span><span class=string>"reverbmix"</span><span class=operator>,</span> <span class=number>2</span><span class=operator>)</span>
+<span class=identifier>mixer</span> <span class=operator>=</span> <span class=identifier>Mixer</span><span class=operator>{</span> <span class=identifier>input</span> <span class=operator>=</span> <span class=identifier>verbmix</span> <span class=operator>}</span>
+<span class=comment>--]]</span>
+
+
+<span class=keyword>local</span> <span class=identifier>synth</span> <span class=operator>=</span> <span class=identifier>Def</span><span class=operator>{</span>
+   <span class=identifier>dur</span> <span class=operator>=</span> <span class=number>0.1126</span><span class=operator>,</span>
+   <span class=identifier>amp</span> <span class=operator>=</span> <span class=number>0.225</span><span class=operator>,</span>
+   <span class=identifier>freq</span> <span class=operator>=</span> <span class=number>200</span><span class=operator>,</span>
+   
+   <span class=identifier>P</span><span class=string>"amp"</span> <span class=operator>*</span> <span class=identifier>Env</span><span class=operator>(</span><span class=identifier>P</span><span class=string>"dur"</span><span class=operator>)</span> <span class=operator>*</span> 
+      <span class=identifier>Lag</span><span class=operator>(</span>
+         <span class=identifier>ATan</span><span class=operator>(</span><span class=identifier>Saw</span><span class=operator>(</span> <span class=identifier>P</span><span class=string>"freq"</span> <span class=operator>*</span> <span class=identifier>Square</span><span class=operator>{</span><span class=identifier>freq</span><span class=operator>=</span><span class=number>20</span><span class=operator>}</span><span class=operator>)</span><span class=operator>)</span>
+      <span class=operator>,</span> <span class=number>0.4</span><span class=operator>)</span>
+<span class=operator>}</span>
+
+
+<span class=keyword>for</span> <span class=identifier>i</span><span class=operator>=</span><span class=number>1</span><span class=operator>,</span> <span class=number>14</span> <span class=keyword>do</span>
+   <span class=identifier>synth</span><span class=operator>{</span>
+      <span class=identifier>freq</span> <span class=operator>=</span> <span class=number>50</span><span class=operator>*</span><span class=identifier>max</span><span class=operator>(</span><span class=number>1.</span><span class=operator>,</span> <span class=number>2</span><span class=operator>^</span><span class=operator>(</span><span class=identifier>i</span><span class=operator>/</span><span class=number>3</span><span class=operator>)</span><span class=operator>)</span><span class=operator>,</span><span class=comment>--+random()*0.3),</span>
+      <span class=identifier>amp</span> <span class=operator>=</span> <span class=number>0.005</span><span class=operator>,</span>
+      <span class=identifier>dur</span> <span class=operator>=</span> <span class=number>0.3</span><span class=operator>,</span>
+      <span class=identifier>out</span> <span class=operator>=</span> <span class=identifier>verbmix</span>
+   <span class=operator>}</span>
+   <span class=identifier>wait</span><span class=operator>(</span><span class=number>0.2</span><span class=operator>)</span>
+<span class=keyword>end</span>
+
+
+<span class=comment>---[=[</span>
+<span class=keyword>function</span> <span class=identifier>testing</span><span class=operator>(</span><span class=operator>)</span>
+   <span class=keyword>local</span> <span class=identifier>x</span> <span class=operator>=</span> <span class=number>10</span>
+   <span class=comment>--[[
+   x = 10000
+   --]]</span>
+   <span class=keyword>return</span> <span class=identifier>x</span>
+<span class=keyword>end</span>
+<span class=comment>--]=]</span>
+</pre>
+</body>
+</html>
