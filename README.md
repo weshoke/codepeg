@@ -64,7 +64,7 @@ Specification Files
 Specification files are the heart of codepeg.  They describe the structure of a language to be lexed and parser.  The 
 three basic definitions are:
 	
-##### Token(patt, name, [priority])
+#### Token(patt, name, [priority])
 Create a Token from `patt` with name `name`. `priority` defaults to 0.  It can be any numeric 
 argument including the special value MAX_PRIORITY.  In general, tokens should be ordered from largest to 
 smallest in order to prevent the lexer from breaking up larger tokens into smaller ones inadvertently.  For 
@@ -75,13 +75,13 @@ Note, `patt` should not have any `V` lpeg patterns in it.  Tokens should be sole
 and captures.  Tokens are not turned into a grammar by the lexer.
 
 
-##### Rule(patt, name)
+#### Rule(patt, name)
 Create a Rule from `patt` with name `name`.  Rules describe sequences of tokens and as such should contain 
 exclusively patterns made up of grammar rules constructed from the `V` lpeg pattern.  Rules can depend on 
 other tules and tokens only.
 
 
-##### Comment(patt, name)
+#### Comment(patt, name)
 Comments are like tokens except they have no priority since it's implied that they have the highest priority 
 during the lexing process.
 	
