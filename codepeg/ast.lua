@@ -1,6 +1,21 @@
+local pairs = pairs
 local ipairs = ipairs
 local print = print
 local assert = assert
+
+local listlpeg = require("listlpeg")
+local P = listlpeg.P
+local R = listlpeg.R
+local S = listlpeg.S
+local L = listlpeg.L
+local V = listlpeg.V
+local C = listlpeg.C
+local Cmt = listlpeg.Cmt
+local Ct = listlpeg.Ct
+local Cg = listlpeg.Cg
+local Cc = listlpeg.Cc
+
+local string = string
 
 
 module(...)
@@ -97,4 +112,65 @@ function ast_to_tokens(ast, tokens)
 		end
 	end
 	return tokens
+end
+
+function print_nodes(ast, lvl)
+	lvl = lvl or 0
+	print(string.rep("  ", lvl)..(ast.rule or ast.token or "<nothing>"))
+	if(not ast.token) then
+		for i, n in ipairs(ast) do
+			print_nodes(n, lvl+1)
+		end
+	end
+end
+
+
+function depthfirst(patt)
+	return P{
+		[1] = "depth_first",
+		patt = patt,
+		-- (the pattern) + (the pattern down one level in the list) + (look in the next element)
+		depth_first = (V"patt" + L(V"depth_first") + P(1))^0
+	}
+end
+
+function Crule(name)
+	return Cmt(C(1), function(s, i, t)
+		return t.rule == name, t
+	end)
+end
+
+function Prule(name)
+	return Cmt(C(1), function(s, i, t)
+		--print("Prule", t.rule, name)
+		if(name) then
+			return t.rule == name
+		else
+			return true
+		end
+	end)
+end
+
+function Lrule(name, patt)
+	return Cmt(C(L(patt)), function(s, i, t, ...)
+		--print("Lrule", t.rule, name)
+		return t.rule == name, ...
+	end)
+end
+
+function Ctoken(name)
+	return Cmt(C(1), function(s, i, t)
+		return t.token == name, t
+	end)
+end
+
+function Ptoken(name)
+	return Cmt(C(1), function(s, i, t)
+		--print("Ptoken", i, t.token, name)
+		if(name) then
+			return t.token == name
+		else
+			return true
+		end
+	end)
 end
