@@ -150,6 +150,7 @@ body {
 	background: #ffffff;
 	font-family: Arial, sans-serif;
 	font-size: 12px;
+	color: #000000;
 }
 
 pre {
@@ -157,17 +158,19 @@ pre {
 	padding: 8px;
 }
 
-span.operator { font-family: "Courier New", Courier, Monaco, monospace; }
-span.number { font-family: "Courier New", Courier, Monaco, monospace; color: #1b39f5; }
-span.identifier { font-family: "Courier New", Courier, Monaco, monospace; }
-span.comment { font-family: "Courier New", Courier, Monaco, monospace; color: #0c7f3d; }
-span.string  { font-family: "Courier New", Courier, Monaco, monospace; color: #de4347; }
-span.keyword { font-family: "Courier New", Courier, Monaco, monospace; color: #a22360; 
-	text-shadow: #e4e4e4 1px 1px 0;
-	/*background-color: #fdfdfd;*/
-	/*font-weight: bold;*/ 
+span {
+	font-family: 'Bitstream Vera Sans Mono','Courier', monospace;
+/*	font-size: 115%%; */
 }
-span.library { font-family: "Courier New", Courier, Monaco, monospace; color: #571d8d; text-shadow: #eeeeee 1px 1px 0; }
+
+span.comment 	{ color: #998;  font-style: italic; }
+span.identifier { color: #000000; }
+span.keyword 	{ color: #000000; font-weight: bold; }
+span.function_name 	{ color: #900; font-weight: bold; }
+span.library 	{ color: #0086B3; }
+span.number 	{ color: #099; }
+span.operator 	{ color: #000000; }
+span.string  	{ color: #D14; }
 -->
 </style>
 </head>
@@ -211,7 +214,12 @@ function tokens_to_html(code, tokens)
 			if(library[ tok[1] ]) then
 				class = "library"
 			else
-				class = "identifier"
+				local ptok = tokens[i-1]
+				if(ptok and ptok.token == "FUNCTION") then
+					class = "function_name"
+				else
+					class = "identifier"
+				end
 			end
 		elseif(tok.token == "NUMBER") then
 			class = "number"

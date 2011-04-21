@@ -330,18 +330,11 @@ span {
 /*	font-size: 115%%; */
 }
 
-/* library #0086B3 */
-/* Strings #D14 */
-/* Keywords: font-weight: bold; color: #000000 */
-/* function name #900 */
-/* comment color: #998, font-style: italic;*/
-/* number #099 */
-
-
 span.comment 	{ color: #998;  font-style: italic; }
 span.identifier { color: #000000; }
 span.keyword 	{ color: #000000; font-weight: bold; }
-span.library 	{ color: #a22360; }
+span.function_name 	{ color: #900; font-weight: bold; }
+span.library 	{ color: #0086B3; }
 span.number 	{ color: #099; }
 span.operator 	{ color: #000000; }
 span.string  	{ color: #D14; }
@@ -391,7 +384,12 @@ function tokens_to_html(code, tokens)
 			if(library[ tok[1] ]) then
 				class = "library"
 			else
-				class = "identifier"
+				local ptok = tokens[i-1]
+				if(ptok and ptok.token == "FUNCTION") then
+					class = "function_name"
+				else
+					class = "identifier"
+				end
 			end
 		elseif(tok.token == "NUMBER") then
 			class = "number"
@@ -413,7 +411,7 @@ end
 
 -- write to file
 local function_code = "<br/><h2>Global Functions</h2> <ol>"
-local prefix = "<span class=keyword>function</span> <span class=identifier>%s</span>"
+local prefix = "<span class=keyword>function</span> <span class=function_name>%s</span>"
 local gfuncs = get_global_functions(AST)
 for i, gfunc in ipairs(gfuncs) do
 	-- get the function body tokens
