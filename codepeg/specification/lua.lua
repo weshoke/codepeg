@@ -273,7 +273,8 @@ suffix = Rule(
 )
 
 var = Rule(
-	V"prefix" * (V"suffix" * #V"suffix")^0 * V"index" + 
+	-- Note: don't produce a capture when not consuming input
+	V"prefix" * (V"suffix" * ( #V"suffix"/function()end ) )^0 * V"index" + 
 	V"NAME",
 	"var"
 )
@@ -284,7 +285,8 @@ varlist = Rule(
 )
 
 functioncall = Rule(
-	V"prefix" * (V"suffix" * #V"suffix")^0 * V"call",
+	-- Note: don't produce a capture when not consuming input
+	V"prefix" * (V"suffix" * ( #V"suffix"/function()end ) )^0 * V"call",
 	"functioncall"
 )
 
