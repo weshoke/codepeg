@@ -2,6 +2,7 @@ local pairs = pairs
 local ipairs = ipairs
 local print = print
 local assert = assert
+local format = string.format
 
 local listlpeg = require("listlpeg")
 local P = listlpeg.P
@@ -121,6 +122,19 @@ function print_nodes(ast, lvl)
 		for i, n in ipairs(ast) do
 			print_nodes(n, lvl+1)
 		end
+	end
+end
+
+local tablen = 4
+function print_tokens(tokens)
+	for i, tok in ipairs(tokens) do
+		local tlen = tok.token:len()
+		local str = format("%d    %s %s %s", 
+			i, tok.token, 
+			string.rep(".", 16-tlen),
+			tok[1]
+		)
+		print(str)
 	end
 end
 

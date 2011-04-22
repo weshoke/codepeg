@@ -9,6 +9,7 @@ local ipairs = ipairs
 local print = print
 local error = error
 local tostring = tostring
+local type = type
 
 local floor = math.floor
 local format = string.format
@@ -16,10 +17,11 @@ local table = table
 local string = string
 local listlpeg = require("listlpeg")
 
+local ast = require("codepeg.ast")
+
 local printt = printt
 
 local DEBUG = false
-local DEBUG2 = false
 
 
 module(...)
@@ -29,6 +31,19 @@ local C = {}
 local M = setmetatable(getfenv(), C)
 M.__index = M
 
+local
+function optbool(v, def)
+	if(type(v) == "nil") then
+		return def
+	else
+		return v
+	end
+end
+
+local
+function Ignore(patt)
+	return #patt/function()end
+end
 
 function C:__call(init)
 	assert(init.specification)
@@ -40,6 +55,8 @@ function C:__call(init)
 	m.matched = {}
 	m.tried = {}
 	m.rule_network = {}
+	m.trace = optbool(m.trace, false)
+	m.tracetokens = optbool(m.tracetokens, false)
 	
 	m:load_specification()
 	return m
@@ -79,27 +96,50 @@ function M:remove_rule_network(imax, imin, name)
 			if(node[#node] == name) then
 				local pos = #node
 				node[#node] = nil
-				--print(j, pos)
 				node.start_tokens[pos] = nil
 			end
 		end
 	end
 end
 
+function M:remove_token_stack(imax, imin, name)
+	for j=imax, imin, -1 do
+		local slot = self.token_stack[j]
+		if(slot) then
+			for i=#slot, 1, -1 do
+				local e = slot[i]
+				if(e.rule == name) then
+					table.remove(slot, i)
+				end
+			end
+		end
+	end
+end
+
+local
+function slot_has_token(slot, idx, token, rule)
+	for i, e in ipairs(slot) do
+		if(e.idx == idx and e.token == token and e.rule == rule) then
+			return true
+		end
+	end
+	return false
+end
+
 function M:push_token(i, name, tok)
 	local last_rule = assert(self.rule_stack[#self.rule_stack])
-	--[[
 	local slot = self.token_stack[i]
 	if(not slot) then
 		slot = {}
 		self.token_stack[i] = slot
 	end
-	slot[#slot+1] = {
-		idx = idx,
-		token = name,
-		rule = last_rule.name
-	}
-	--]]
+	if(not slot_has_token(slot, i, name, last_rule.name)) then
+		slot[#slot+1] = {
+			idx = i,
+			token = name,
+			rule = last_rule.name
+		}
+	end
 	
 	if(tok and tok.token == name) then
 		if(
@@ -116,8 +156,8 @@ function M:push_token(i, name, tok)
 	end
 	self.token_stack.idx = i
 	
-	if(DEBUG2) then
-		print("\t\t\t"..i.." "..name .."\tactual: "..(tok and tok.token or "nil"))
+	if(self.tracetokens) then
+		print(i.."\t\t\tToken: "..name .."\tactual: "..(tok and tok.token or "nil"))
 	end
 	
 	self:set_rule_network(i, nil, last_rule.name)
@@ -166,7 +206,7 @@ function M:push_rule(i, name)
 		self.tried[i] = name
 	end
 	local ntabs = 3 - floor((name:len()-14)/4)
-	if(DEBUG2) then
+	if(self.trace) then
 		print(
 			i..string.rep(" ", #self.rule_stack)..#self.rule_stack, 
 		"->", format("%s%s", name, " ", last_rule and last_rule.name or ""))
@@ -216,8 +256,9 @@ function M:pop_rule(i, name)
 	self.rule_stack.last_token = i
 	
 	self:remove_rule_network(self.token_stack.idx, i+1, name)
+	self:remove_token_stack(self.token_stack.idx, i+1, name)
 	
-	if(DEBUG2) then
+	if(self.trace) then
 		print(i..string.rep(" ", #self.rule_stack+1)..#self.rule_stack+1, 
 			"<-", name, self.token_stack.idx, match and "MATCH" or false)
 		--self:print_rule_stack()
@@ -229,12 +270,30 @@ function M:remove_rule(i, name)
 	assert(last_rule.name == name)
 	self.rule_stack[#self.rule_stack] = nil
 	
-	if(DEBUG2) then
+	if(self.trace) then
 		print(i..string.rep(" ", #self.rule_stack+1)..#self.rule_stack+1, "<-:", name)
-		--self:print_rule_stack()
 	end
 
 	self:remove_rule_network(last_rule.idx, last_rule.idx, name)
+end
+
+function M:token_stack_err_msg()
+	local slot = self.token_stack[#self.token_stack]
+	local msg = "looking for tokens:"
+	for i, e in ipairs(slot) do
+		msg = format("%s %s", msg, e.token)
+	end
+	return msg
+end
+
+function M:last_token_err_msg()
+	local last_token = self.token_stack.last_matched_token
+	local ltok = last_token[1]
+	local ntok = self.tokens[last_token.idx+1]
+	local msg = format("parse err at token %s: %s %s", 
+		last_token.idx, ltok[1], ntok and ntok[1] or "<end of code>"
+	)
+	return msg
 end
 
 function M:load_specification()
@@ -339,26 +398,14 @@ function M:load_specification()
 				listlpeg.P(1), 
 				function()
 					local rule_err = ""
-					local last_rule = self.rule_stack[#self.rule_stack]
-
-					--[=[
-					--print("*******************************************\nTokenStack:")
+					
+					print("tokens:")
+					ast.print_tokens(self.tokens)
+					--printt(self.token_stack)
+					
+					--print("rule stack")
 					--printt(self.rule_network)
-					if(self.token_stack.last_matched_token) then
-						local tok = self.token_stack.last_matched_token
-						--printt(tok)
-						--[[
-						for k, v in pairs(self.token_stack.last_matched_token) do
-							print(k, v)
-						end
-						--]]
-						token_err = "error at loc "..tok[1].end_idx
-					end
-					self.err = self.token_stack.last_matched_token
-					self.err.stack = self.rule_network[#self.rule_network]
-					--]=]
-					printt(self.rule_stack)
-					error("error parsing tokens:\n"..rule_err)
+					error("error parsing tokens:\n"..self:token_stack_err_msg().."\n"..self:last_token_err_msg())
 				end
 			)
 	end
@@ -383,6 +430,7 @@ function M:load_specification()
 		Comment = Comment,
 		Token = Token,
 		Rule = Rule,
+		Ignore = Ignore,
 		LexErr = function(patt)
 			return patt
 		end,
@@ -430,6 +478,7 @@ function M:match(s)
 	self.matched = {}
 	self.tried = {}
 	self.rule_network = {}
+	self.tokens = s
 
 	local res, x = self.patt:match(s)
 	return res

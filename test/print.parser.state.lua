@@ -143,13 +143,16 @@ local parser = Parser{
 	specification = luaspec:get_specification(),
 	root = "block",
 	trace = true,			-- print the rules visited by the parser
-	tracetokens = true		-- print the tokens visited by the parser
+	tracetokens = false		-- print the tokens visited by the parser
 }
 
 local code = [[
-	function test()
+	function x()
+		x = y[10].
 	end
 ]]
 
 local tokens = lexer:match(code)
 local AST = parser:match(tokens)
+
+ast.print_nodes(AST)

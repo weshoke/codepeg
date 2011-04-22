@@ -27,6 +27,11 @@ function search(patt)
 	return (patt + listlpeg.P(1))^0
 end
 
+local
+function Ignore(patt)
+	return #patt/function()end
+end
+
 
 local C = {}
 local M = setmetatable(getfenv(), C)
@@ -118,6 +123,7 @@ function M:load_specification()
 		Comment = Comment,
 		Token = Token,
 		Rule = Rule,
+		Ignore = Ignore,
 		LexErr = LexErr,
 		
 		-- general functions
