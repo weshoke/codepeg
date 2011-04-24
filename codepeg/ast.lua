@@ -2,6 +2,7 @@ local pairs = pairs
 local ipairs = ipairs
 local print = print
 local assert = assert
+local tostring = tostring
 local format = string.format
 
 local listlpeg = require("listlpeg")
@@ -129,8 +130,11 @@ local tablen = 4
 function print_tokens(tokens)
 	for i, tok in ipairs(tokens) do
 		local tlen = tok.token:len()
-		local str = format("%d    %s %s %s", 
-			i, tok.token, 
+		local n = tostring(i)
+		local spcs = n:len()
+		local str = format("%s%s%s %s %s", 
+			n, string.rep(" ", 6 - spcs),
+			tok.token, 
 			string.rep(".", 16-tlen),
 			tok[1]
 		)

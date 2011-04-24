@@ -143,16 +143,68 @@ local parser = Parser{
 	specification = luaspec:get_specification(),
 	root = "block",
 	trace = true,			-- print the rules visited by the parser
-	tracetokens = false		-- print the tokens visited by the parser
+	--tracetokens = true,	-- print the tokens visited by the parser
+	--tracematch = true,		-- print the matched tokens
 }
 
+-- error
 local code = [[
 	function x()
 		x = y[10].
 	end
 ]]
 
-local tokens = lexer:match(code)
-local AST = parser:match(tokens)
+local code = [[
+	x, y = 10, 20
+]]
 
-ast.print_nodes(AST)
+local code = [[
+	t = {
+		name = "fixed",
+		idx = 10,
+	}
+]]
+
+local code = [[
+	t"argument"
+]]
+
+local code = [[
+	if(x) then
+		test()
+	end
+]]
+
+
+local code = [==[
+	local
+	function zebra()
+		return [[stripes]]
+	end
+]==]
+
+
+local code = [==[
+	function name(x, y, z)
+		x
+	end
+]==]
+
+
+local tokens = lexer:match(code)
+local ok, AST = pcall(parser.match, parser, tokens)
+if(not ok) then
+	print("********************************")
+	print("Rule Stack:")
+	printt(parser:lastrulestack())
+	
+	print("********************************")
+	print("Attempted Tokens List:")
+	printt(parser:tokenlist())
+	
+	print("********************************")
+	print("Last Matched Token:")
+	printt(parser:lastoken())
+else
+	ast.print_nodes(AST)
+end

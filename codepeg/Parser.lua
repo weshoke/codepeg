@@ -18,9 +18,9 @@ local string = string
 local listlpeg = require("listlpeg")
 
 local ast = require("codepeg.ast")
+local Rulestack = require("codepeg.Rulestack")
 
 local printt = printt
-
 local DEBUG = false
 
 
@@ -50,250 +50,71 @@ function C:__call(init)
 	assert(init.root)
 	
 	local m = setmetatable(init, M)
-	m.token_stack = {idx = 0}
-	m.rule_stack = {last_token = 0}
-	m.matched = {}
-	m.tried = {}
-	m.rule_network = {}
 	m.trace = optbool(m.trace, false)
 	m.tracetokens = optbool(m.tracetokens, false)
+	m.tracematch = optbool(m.tracematch, false)
+	m.rulestack = Rulestack()
 	
 	m:load_specification()
 	return m
 end
 
-function M:set_rule_network(i, name, toname)
-	local node = self.rule_network[i]
-	if(not node) then
-		node = {start_tokens = {}}
-		self.rule_network[i] = node
-		
-		local prevnode = self.rule_network[i-1]
-		if(toname and prevnode) then
-			for j=1, #prevnode do
-				local pname = prevnode[j]
-				node[#node+1] = pname
-				local pos = #node
-				node.start_tokens[pos] = prevnode.start_tokens[j]
-
-				if(pname == toname) then
-					break
-				end
-			end
-		end
-	end
-	if(name) then
-		node[#node+1] = name
-		local pos = #node
-		node.start_tokens[pos] = i
-	end
-end
-
-function M:remove_rule_network(imax, imin, name)
-	for j=imax, imin, -1 do
-		local node = self.rule_network[j]
-		if(node) then
-			if(node[#node] == name) then
-				local pos = #node
-				node[#node] = nil
-				node.start_tokens[pos] = nil
-			end
-		end
-	end
-end
-
-function M:remove_token_stack(imax, imin, name)
-	for j=imax, imin, -1 do
-		local slot = self.token_stack[j]
-		if(slot) then
-			for i=#slot, 1, -1 do
-				local e = slot[i]
-				if(e.rule == name) then
-					table.remove(slot, i)
-				end
-			end
-		end
-	end
-end
-
-local
-function slot_has_token(slot, idx, token, rule)
-	for i, e in ipairs(slot) do
-		if(e.idx == idx and e.token == token and e.rule == rule) then
-			return true
-		end
-	end
-	return false
-end
-
 function M:push_token(i, name, tok)
-	local last_rule = assert(self.rule_stack[#self.rule_stack])
-	local slot = self.token_stack[i]
-	if(not slot) then
-		slot = {}
-		self.token_stack[i] = slot
-	end
-	if(not slot_has_token(slot, i, name, last_rule.name)) then
-		slot[#slot+1] = {
-			idx = i,
-			token = name,
-			rule = last_rule.name
-		}
-	end
+	local lastrule = self.rulestack:top()
+	self.rulestack:tokentry(i, name)
 	
 	if(tok and tok.token == name) then
-		if(
-			(self.token_stack.last_matched_token and
-			self.token_stack.last_matched_token.idx < i) 
-			or not self.token_stack.last_matched_token
-		) then
-			self.token_stack.last_matched_token = {
-				idx = i,
-				tok,
-				rule = last_rule.name,
-			}
+		if(self.tracematch) then
+			print(i.."\t\t\tMatch: "..name.."  Rule: "..lastrule)
 		end
+		
+		self.rulestack:tokenmatch(i, name, tok)
 	end
-	self.token_stack.idx = i
 	
 	if(self.tracetokens) then
 		print(i.."\t\t\tToken: "..name .."\tactual: "..(tok and tok.token or "nil"))
 	end
-	
-	self:set_rule_network(i, nil, last_rule.name)
-end
-
-function M:print_token_slot(i)
-	local slot = self.token_stack[i]
-	if(slot) then
-		local msg = ""
-		for i, v in ipairs(slot) do
-			msg = msg .. " "..format("%s:%s", v.token, v.rule)
-		end
-		print("", i.." "..msg)
-	elseif(self.matched[i]) then
-		print("", i.." <matched>:"..self.matched[i])
-	else
-		print("", i.." <no slot>")
-	end
-end
-
-function M:print_token_stack()
-	for idx=self.token_stack.idx, 1, -1 do
-		self:print_token_slot(idx)
-	end
 end
 
 function M:push_rule(i, name)
-	local last_rule = self.rule_stack[#self.rule_stack]
+	self.rulestack:push(i, name)
 	
-	self.rule_stack[#self.rule_stack+1] = {
-		idx = i,
-		name = name
-	}
-	
-	---[[
-	if(last_rule) then
-		self:set_rule_network(i, name, last_rule.name)
-	else
-		self:set_rule_network(i, name)
-	end
-	
-	
-	if(self.tried[i]) then
-		self.tried[i] = format("%s\n\t\t%s", self.tried[i], name)
-	else
-		self.tried[i] = name
-	end
-	local ntabs = 3 - floor((name:len()-14)/4)
 	if(self.trace) then
 		print(
-			i..string.rep(" ", #self.rule_stack)..#self.rule_stack, 
-		"->", format("%s%s", name, " ", last_rule and last_rule.name or ""))
-		--self:print_rule_stack()
+			i..string.rep(" ", self.rulestack.stackidx)..self.rulestack.stackidx..
+		" -> ".. format("%s%s", name, " ", self.rulestack:top() or ""))
 	end
-end
-
-function M:print_rule_stack()
-	for i=#self.rule_stack, 1, -1 do
-		local rule = self.rule_stack[i]
-		print("", i, rule.name, rule.idx)
-	end
-	print("")
-	--[[
-	print("----")
-	for i=#self.tried, 1, -1 do
-		print("", i, self.tried[i])
-	end
-	--]]
 end
 
 function M:pop_rule(i, name)
-	local last_rule = assert(self.rule_stack[#self.rule_stack])
-	local match = false
-
-	if(
-		--last_rule.idx <= i and 
-		last_rule.name == name
-	) then
-		match = true
-		self.rule_stack[#self.rule_stack] = nil
-		
-		for idx=last_rule.idx, i do
-			if(self.matched[idx]) then
-				self.matched[idx] = format("%s\n\t\t%s", self.matched[idx], name)
-			else
-				self.matched[idx] = "\n\t\t"..name
-			end
-		end
-	else
-		print(last_rule.name, name)
-		print(last_rule.idx, i)
-		assert(false)
-	end
-
-	
-	self.rule_stack.last_token = i
-	
-	self:remove_rule_network(self.token_stack.idx, i+1, name)
-	self:remove_token_stack(self.token_stack.idx, i+1, name)
+	assert(self.rulestack:top() == name)
+	self.rulestack:popmatch(i, name)
 	
 	if(self.trace) then
-		print(i..string.rep(" ", #self.rule_stack+1)..#self.rule_stack+1, 
-			"<-", name, self.token_stack.idx, match and "MATCH" or false)
-		--self:print_rule_stack()
+		print(i..string.rep(" ", self.rulestack.stackidx)..self.rulestack.stackidx ..
+			" <- "..name.." "..self.rulestack.toklistidx.. " MATCH")
 	end
 end
 
 function M:remove_rule(i, name)
-	local last_rule = assert(self.rule_stack[#self.rule_stack])
-	assert(last_rule.name == name)
-	self.rule_stack[#self.rule_stack] = nil
+	assert(self.rulestack:top() == name)
+	self.rulestack:popfail(i, name)
 	
 	if(self.trace) then
-		print(i..string.rep(" ", #self.rule_stack+1)..#self.rule_stack+1, "<-:", name)
+		print(i..string.rep(" ", self.rulestack.stackidx)..self.rulestack.stackidx .." <-: "..name)
 	end
-
-	self:remove_rule_network(last_rule.idx, last_rule.idx, name)
 end
 
-function M:token_stack_err_msg()
-	local slot = self.token_stack[#self.token_stack]
-	local msg = "looking for tokens:"
-	for i, e in ipairs(slot) do
-		msg = format("%s %s", msg, e.token)
-	end
-	return msg
+function M:tokenlist()
+	return self.rulestack.tokenlist
 end
 
-function M:last_token_err_msg()
-	local last_token = self.token_stack.last_matched_token
-	local ltok = last_token[1]
-	local ntok = self.tokens[last_token.idx+1]
-	local msg = format("parse err at token %s: %s %s", 
-		last_token.idx, ltok[1], ntok and ntok[1] or "<end of code>"
-	)
-	return msg
+function M:lastoken()
+	return self.rulestack.lastmatch
+end
+
+function M:lastrulestack()
+	return self.rulestack:laststack()
 end
 
 function M:load_specification()
@@ -364,8 +185,6 @@ function M:load_specification()
 		end)
 	end
 	
-	
-	
 	local rules = {}
 	local Rule = function(patt, name)
 		---[[
@@ -397,15 +216,23 @@ function M:load_specification()
 			listlpeg.Cmt(
 				listlpeg.P(1), 
 				function()
-					local rule_err = ""
-					
+					--[[
 					print("tokens:")
 					ast.print_tokens(self.tokens)
-					--printt(self.token_stack)
 					
-					--print("rule stack")
-					--printt(self.rule_network)
-					error("error parsing tokens:\n"..self:token_stack_err_msg().."\n"..self:last_token_err_msg())
+					--printt(self.tokenstack.last)
+					
+					printt(self.rulestack.stacks)
+					printt(self.rulestack.tokidxs)
+					printt(self:lastrulestack())
+					
+					print("tokenslot:")
+					--printt(self:get_last_tokenslot())
+					print("tokenlist:", self.rulestack.toklistidx)
+					printt(self.rulestack.tokenlist)
+					printt(self.rulestack.lastmatch)
+					--]]
+					error("error parsing tokens")
 				end
 			)
 	end
@@ -473,11 +300,6 @@ function M:set_root(root)
 end
 
 function M:match(s)
-	self.token_stack = {idx = 0}
-	self.rule_stack = {last_token = 0}
-	self.matched = {}
-	self.tried = {}
-	self.rule_network = {}
 	self.tokens = s
 
 	local res, x = self.patt:match(s)
