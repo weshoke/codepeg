@@ -129,7 +129,7 @@ Invoke the Parser:
 
 ####Diagnostic Information:
 
-Parser:lastrulestack() will return the Parser's rule stack at the point where parsing failed.  The rule stack can be used to determine what kind of error occurred.
+`Parser:lastrulestack()` will return the Parser's rule stack at the point where parsing failed.  The rule stack can be used to determine what kind of error occurred.
 
 	Rule Stack:
 	{
@@ -145,7 +145,7 @@ Parser:lastrulestack() will return the Parser's rule stack at the point where pa
 	  [9] = "prefix",
 	}
 
-Parser:tokenlist() will return a list of tokens that the Parser attempted to match against the next token before failing.  The token list can be used to make any error messages reported more relevant by giving hints as to what tokens might be missing from the code where the parsing error occurred.
+`Parser:tokenlist()` will return a list of tokens that the Parser attempted to match against the next token before failing.  The token list can be used to make any error messages reported more relevant by giving hints as to what tokens might be missing from the code where the parsing error occurred.
 
 	Attempted Tokens List:
 	{
@@ -171,7 +171,7 @@ Parser:tokenlist() will return a list of tokens that the Parser attempted to mat
 	  },
 	}
 
-Parser:lastoken() give the precise location of how far through the token stream the Parser made it and what rule the Parser was mating the token stream against when it made the match.
+`Parser:lastoken()` give the precise location of how far through the token stream the Parser made it and what rule the Parser was mating the token stream against when it made the match.
 
 	Last Matched Token:
 	{
