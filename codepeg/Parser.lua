@@ -301,6 +301,7 @@ end
 
 function M:match(s)
 	self.tokens = s
+	self.rulestack = Rulestack()
 
 	local res, x = self.patt:match(s)
 	return res
