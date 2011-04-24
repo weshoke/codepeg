@@ -109,7 +109,7 @@ function M:tokenlist()
 	return self.rulestack.tokenlist
 end
 
-function M:lastoken()
+function M:lasttoken()
 	return self.rulestack.lastmatch
 end
 

@@ -204,7 +204,7 @@ if(not ok) then
 	
 	print("********************************")
 	print("Last Matched Token:")
-	printt(parser:lastoken())
+	printt(parser:lasttoken())
 else
 	ast.print_nodes(AST)
 end
