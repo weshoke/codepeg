@@ -171,7 +171,7 @@ Invoke the Parser:
 	  },
 	}
 
-`Parser:lastoken()` give the precise location of how far through the token stream the Parser made it and what rule the Parser was mating the token stream against when it made the match.
+`Parser:lastoken()` gives the precise location of how far through the token stream the Parser made it and what rule the Parser was mating the token stream against when it made the match.
 
 	Last Matched Token:
 	{
