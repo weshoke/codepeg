@@ -64,13 +64,14 @@ the following format:
 	}
 
 
-### codepeg.Stack
+### Data Structures
+#### codepeg.Stack
 Generic stack data structure
 
-### codepeg.Tokenlist
+#### codepeg.Tokenlist
 A data structure for keeping track of tokens and their associated rules
 
-### codepeg.Rulestack
+#### codepeg.Rulestack
 A data structure for tracking Parser state.  It maintains information describing what Parser rules are currently active, what tokens have been attempted on the last token position reached by the parser, and information about the last token the Parser matched.  Rulestack is used by Parser internally and can be queried through Parser's accessor methods.
 
 ### codepeg.ast
