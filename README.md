@@ -112,3 +112,75 @@ during the lexing process.
 #### LexErr(patt, msg)
 LexErr will raise an error during the lexing process if `patt` succeeds and an error with `msg` as its message will be thrown.
 
+
+Diagnostics
+--------
+
+Input Code: (note that the second line is an invalid statement and will generate a parser error)
+	
+	function name(x, y, z)
+		x
+	end
+	
+Invoke the Parser:
+
+	local ok, AST = pcall(parser.match, parser, tokens)
+
+
+####Diagnostic Information:
+
+Parser:lastrulestack() will return the Parser's rule stack at the point where parsing failed.  The rule stack can be used to determine what kind of error occurred.
+
+	Rule Stack:
+	{
+	  idx = 9,
+	  [1] = "block",
+	  [2] = "chunk",
+	  [3] = "stat",
+	  [4] = "funcbody",
+	  [5] = "block",
+	  [6] = "chunk",
+	  [7] = "stat",
+	  [8] = "functioncall",
+	  [9] = "prefix",
+	}
+
+Parser:tokenlist() will return a list of tokens that the Parser attempted to match against the next token before failing.  The token list can be used to make any error messages reported more relevant by giving hints as to what tokens might be missing from the code where the parsing error occurred.
+
+	Attempted Tokens List:
+	{
+	  rules = {
+	    [1] = "args",
+	    [2] = "tableconstructor",
+	    [3] = "args",
+	    [4] = "call",
+	    [5] = "index",
+	    [6] = "index",
+	    [7] = "varlist",
+	    [8] = "stat",
+	  },
+	  tokens = {
+	    [1] = "LEFT_PAREN",
+	    [2] = "LEFT_BRACE",
+	    [3] = "STRING",
+	    [4] = "COLON",
+	    [5] = "LEFT_BRACKET",
+	    [6] = "DOT",
+	    [7] = "COMMA",
+	    [8] = "EQUALS",
+	  },
+	}
+
+Parser:lastoken() give the precise location of how far through the token stream the Parser made it and what rule the Parser was mating the token stream against when it made the match.
+
+	Last Matched Token:
+	{
+	  idx = 10,
+	  rule = "prefix",
+	  tok = {
+	    end_idx = 28,
+	    start_idx = 27,
+	    token = "NAME",
+	    [1] = "x",
+	  },
+	}
