@@ -14,6 +14,7 @@ During the parsing process, codepeg tracks the parser as it moves through the gr
 a parsing error occurs, all the basic information required to determine what the error is is available.
 
 When parsing fails, all pertinent information is stored in Parser's `rulestack` field and can be queried through Parser or by directly inspecting the Rulestack itself.  Currently stored information includes:
+
 	1. Stack of rules representing the furthest traversed position by the Parser over the input list of tokens
 	2. A list of tokens the Parser attempted to match against just before failing
 	3. The last token matched along with its position in the token stream and the active rule when the token was matched
