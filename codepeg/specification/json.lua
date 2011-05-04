@@ -2,15 +2,6 @@ module(...)
 
 local specification = [=====[
 
---[[
-
-int, int2, int3, int4
-float, float2, float3, float4
-float2x2, float3x3, float4x4
-bool, bool2, bool3, bool4
-strin
---]]
-
 local keywords = {
 	"true", "false", "null",
 }
