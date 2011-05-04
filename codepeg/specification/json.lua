@@ -16,7 +16,6 @@ local operators = {
 	dot = ".",
 	comma = ",",
 	colon = ":",
-	equal = "=",
 }
 
 
