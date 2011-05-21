@@ -5,6 +5,8 @@ local assert = assert
 local tostring = tostring
 local format = string.format
 
+local math = math
+
 local listlpeg = require("listlpeg")
 local P = listlpeg.P
 local R = listlpeg.R
@@ -59,6 +61,18 @@ function find_rule(ast, rule)
 			if(r) then
 				return r
 			end
+		end
+	end
+end
+
+function list_find_node(ast, tokrule, sidx)
+	sidx = sidx or 1
+	for i=math.max(1, sidx), #ast do
+		local n = ast[i]
+		if(n.rule == tokrule) then
+			return i, n
+		elseif(n.token == tokrule) then
+			return i, n
 		end
 	end
 end
@@ -127,8 +141,11 @@ function print_nodes(ast, lvl)
 end
 
 local tablen = 4
-function print_tokens(tokens)
-	for i, tok in ipairs(tokens) do
+function print_tokens(tokens, imin, imax)
+	imin = imin or 1
+	imax = imax or #tokens
+	for i=imin, imax do
+		local tok = tokens[i]
 		local tlen = tok.token:len()
 		local n = tostring(i)
 		local spcs = n:len()
