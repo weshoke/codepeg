@@ -22,10 +22,7 @@ local
 function Rule()
 end
 
-local
-function search(patt)
-	return (patt + listlpeg.P(1))^0
-end
+local space = listlpeg.S('\r\n\f\t ')
 
 local
 function Ignore(patt)
@@ -180,6 +177,20 @@ function M:load_specification()
 	
 	for k, v in pairs(comments) do
 		tokens_patt = v + tokens_patt
+	end
+	
+	local
+	function search(patt)
+		return (patt + listlpeg.Cmt(
+			listlpeg.C(listlpeg.P(1)),
+			function(s, i, c)
+				if(not space:match(c)) then
+					self.erridx = i
+					error("invalid character '"..c.."'", 0)
+				end
+				return true
+			end)
+		)^0
 	end
 
 	self.patt = listlpeg.Ct(search(tokens_patt))
