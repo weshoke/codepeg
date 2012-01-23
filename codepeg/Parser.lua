@@ -186,9 +186,8 @@ function M:load_specification()
 	end
 	
 	local rules = {}
-	local Rule = function(patt, name)
-		---[[
-		local rule = listlpeg.Ct(
+	local Rule = function(patt, name, collapsable)
+		local rule = listlpeg.Cmt(
 			markrule(name) * (
 				patt * 
 				listlpeg.Cg(
@@ -197,7 +196,15 @@ function M:load_specification()
 				) * poprule(name)
 				
 				+ endrule(name)
-			) 
+			) , function(s, i, ...)
+				local args = {...}
+				if(collapsable and #args == 1) then
+					return i, args[1]
+				else
+					args.rule = name
+					return i, args
+				end
+			end
 		)
 		
 		rules[name] = rule
@@ -216,22 +223,6 @@ function M:load_specification()
 			listlpeg.Cmt(
 				listlpeg.P(1), 
 				function()
-					--[[
-					print("tokens:")
-					ast.print_tokens(self.tokens)
-					
-					--printt(self.tokenstack.last)
-					
-					printt(self.rulestack.stacks)
-					printt(self.rulestack.tokidxs)
-					printt(self:lastrulestack())
-					
-					print("tokenslot:")
-					--printt(self:get_last_tokenslot())
-					print("tokenlist:", self.rulestack.toklistidx)
-					printt(self.rulestack.tokenlist)
-					printt(self.rulestack.lastmatch)
-					--]]
 					error("error parsing tokens")
 				end
 			)

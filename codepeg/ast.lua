@@ -98,6 +98,25 @@ function find_all_rules(ast, rule, rules)
 	return rules
 end
 
+function find_token_before(tokens, tok, idx)
+	for i=idx, 1, -1 do
+		if(tokens[i].token == tok) then
+			return tok, i
+		end
+	end
+end
+
+function find_token_before_excluding(tokens, tok, idx, exclude)
+	for i=idx, 1, -1 do
+		if(exclude[tokens[i].token]) then
+			return
+		end
+		if(tokens[i].token == tok) then
+			return tok, i
+		end
+	end
+end
+
 function find_all_tokens(ast, token, tokens)
 	tokens = tokens or {}
 	if(ast.token) then
@@ -132,7 +151,13 @@ end
 
 function print_nodes(ast, lvl)
 	lvl = lvl or 0
-	print(string.rep("  ", lvl)..(ast.rule or ast.token or "<nothing>"))
+	x = ""
+	if(ast.rule == "name") then
+		x = ast[2][1]
+	elseif(ast.token == "TEXT") then
+		--x = ast[1]
+	end
+	print(string.rep("  ", lvl)..(ast.rule or ast.token or "<nothing>").." "..x)
 	if(not ast.token) then
 		for i, n in ipairs(ast) do
 			print_nodes(n, lvl+1)

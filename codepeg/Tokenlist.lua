@@ -1,16 +1,15 @@
--- Stack.lua
+-- Tokenlist.lua
 local setmetatable = setmetatable
 local getfenv = getfenv
 local assert = assert
 local pairs = pairs
 local ipairs = ipairs
 local print = print
+local tostring = tostring
 
 local table = table
 local string = string
 local format = string.format
-
---local Stack = require("codepeg.Stack")
 
 local printt = printt
 
@@ -54,5 +53,42 @@ function M:remove(rule)
 			table.remove(self.rules, i)
 			table.remove(self.tokens, i)
 		end
+	end
+end
+
+function M:findtoken(tok)
+	for i=1, #self.tokens do
+		if(self.tokens[i] == tok) then
+			return i
+		end
+	end
+end
+
+function M:token(idx)
+	if(idx < 0) then
+		return self.tokens[#self.tokens+idx+1]
+	else
+		return self.tokens[idx]
+	end
+end
+
+function M:rule(idx)
+	if(idx < 0) then
+		return self.rules[#self.rules+idx+1]
+	else
+		return self.rules[idx]
+	end
+end
+
+function M:print()
+	local len = #self.rules
+	local lenstr = tostring(len)
+	for i=1, len do
+		local istr = tostring(i)
+		local str = string.rep(" ", lenstr:len() - istr:len())..istr
+		str = str.."  "..self.tokens[i]
+		str = str..string.rep(" ", 15-self.tokens[i]:len())
+		str = str..self.rules[i]
+		print(str)
 	end
 end

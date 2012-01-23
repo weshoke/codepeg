@@ -8,6 +8,7 @@ local pairs = pairs
 local ipairs = ipairs
 local print = print
 local error = error
+local type = type
 
 local table = table
 local format = string.format
@@ -29,6 +30,15 @@ function Ignore(patt)
 	return #patt/function()end
 end
 
+local
+function optbool(v, def)
+	if(type(v) == "nil") then
+		return def
+	else
+		return v
+	end
+end
+
 
 local C = {}
 local M = setmetatable(getfenv(), C)
@@ -39,6 +49,7 @@ function C:__call(init)
 	assert(init.specification)
 	
 	local m = setmetatable(init, M)
+	m.line_numbers = optbool(init.line_numbers, false)
 	m:load_specification()
 	return m
 end
@@ -100,7 +111,9 @@ function M:load_specification()
 	local
 	function LexErr(patt, msg)
 		return listlpeg.Cmt(patt, function(s, i, t)
-			error(msg)
+			self.erridx = i
+			self.errmsg = msg
+			error(msg, 0)
 		end)
 	end
 
@@ -186,7 +199,8 @@ function M:load_specification()
 			function(s, i, c)
 				if(not space:match(c)) then
 					self.erridx = i
-					error("invalid character '"..c.."'", 0)
+					self.errmsg = "invalid character '"..c.."'"
+					error(self.errmsg, 0)
 				end
 				return true
 			end)
@@ -196,6 +210,33 @@ function M:load_specification()
 	self.patt = listlpeg.Ct(search(tokens_patt))
 end
 
+function M:add_line_numbers_to_tokens(tokens, code)
+	local line = 1
+	local charidx = 0
+	local tokidx = 1
+	for linecode in code:gmatch("([^\n]*\n?)") do
+		if(linecode:len() > 0) then
+			local sidx = charidx
+			local eidx = sidx+linecode:len()
+			
+			local tok = tokens[tokidx]
+			while(tok and tok.start_idx <= eidx) do
+				tok.line_number = line
+				tok.start_col = tok.start_idx - sidx
+				tokidx = tokidx+1
+				tok = tokens[tokidx]
+			end
+			
+			charidx = eidx
+			line = line+1
+		end
+	end
+end
+
 function M:match(s)
-	return self.patt:match(s)
+	local tokens = self.patt:match(s)
+	if(self.line_numbers) then
+		self:add_line_numbers_to_tokens(tokens, s)
+	end
+	return tokens
 end
