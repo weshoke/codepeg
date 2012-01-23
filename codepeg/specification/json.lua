@@ -28,7 +28,8 @@ end
 for name, op in pairs(operators) do
 	Token(
 		P(op), name:upper(),
-		op:len()
+		op:len(),
+		true
 	)
 end
 
@@ -82,7 +83,8 @@ NUMBER = Token(
 
 value = Rule(
 	V"STRING" + V"NUMBER" + V"object" + V"array" + V"TRUE" + V"FALSE" + V"NULL",
-	"value"
+	"value",
+	true
 )
 
 array = Rule(

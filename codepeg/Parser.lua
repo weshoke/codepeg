@@ -54,6 +54,7 @@ function C:__call(init)
 	m.tracetokens = optbool(m.tracetokens, false)
 	m.tracematch = optbool(m.tracematch, false)
 	m.rulestack = Rulestack()
+	m.handlers = m.handlers or {}
 	
 	m:load_specification()
 	return m
@@ -130,8 +131,42 @@ function M:load_specification()
 		end)
 	end
 	
+	local
+	function token_return(name, i, t, collapsable)
+		if(t.token == name) then
+			if(collapsable) then
+				return i
+			else
+				return i, t
+			end
+		else
+			return false
+		end
+	end
+	
+	local
+	function token_return_handler(name, i, t, collapsable, handler)
+		if(t.token == name) then
+			if(collapsable) then
+				return i
+			else
+				return i, handler(t)
+			end
+		else
+			return false
+		end
+	end
+	
 	local tokens = {}
-	local Token = function(patt, name)
+	local Token = function(patt, name, priority, collapsable)
+		local handler = self.handlers[name]
+		local f
+		if(handler) then
+			f = token_return_handler
+		else
+			f = token_return
+		end
+		
 		local tok = listlpeg.Cmt(
 			-- order is important here so that markrule gets called *before* marktoken
 			listlpeg.C(1) * marktoken(name), 
@@ -145,11 +180,7 @@ function M:load_specification()
 					end
 				end
 			
-				if(t.token == name) then
-					return i, t
-				else
-					return false
-				end
+				return f(name, i, t, collapsable, handler)
 			end
 		)
 		tokens[name] = tok
@@ -185,8 +216,36 @@ function M:load_specification()
 		end)
 	end
 	
+	local
+	function rule_return(name, i, args, collapsable)
+		if(collapsable and #args == 1) then
+			return i, args[1]
+		else
+			args.rule = name
+			return i, args
+		end
+	end
+	
+	local
+	function rule_return_handler(name, i, args, collapsable, handler)
+		if(collapsable and #args == 1) then
+			return i, args[1]
+		else
+			--args.rule = name
+			return i, handler(args)
+		end
+	end
+	
 	local rules = {}
 	local Rule = function(patt, name, collapsable)
+		local handler = self.handlers[name]
+		local f
+		if(handler) then
+			f = rule_return_handler
+		else
+			f = rule_return
+		end
+		
 		local rule = listlpeg.Cmt(
 			markrule(name) * (
 				patt * 
@@ -198,12 +257,7 @@ function M:load_specification()
 				+ endrule(name)
 			) , function(s, i, ...)
 				local args = {...}
-				if(collapsable and #args == 1) then
-					return i, args[1]
-				else
-					args.rule = name
-					return i, args
-				end
+				return f(name, i, args, collapsable, handler)
 			end
 		)
 		
